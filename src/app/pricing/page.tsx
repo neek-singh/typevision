@@ -121,8 +121,8 @@ export default function PricingPage() {
           planTitle: fullPlanName,
           price: price.toString(),
           userId: user.id,
-          userEmail: user.email,
-          userName: profile?.display_name || user.email.split('@')[0]
+          userEmail: user.email || '',
+          userName: profile?.display_name || user.email?.split('@')[0] || 'User'
         })
       });
 

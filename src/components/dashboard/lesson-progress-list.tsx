@@ -9,7 +9,7 @@ interface Lesson {
   title: string;
   level: 'Beginner' | 'Intermediate' | 'Advanced';
   language: 'English' | 'Hindi';
-  content: string;
+  content?: string;
 }
 
 interface ProgressRecord {

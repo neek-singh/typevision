@@ -154,9 +154,21 @@ export default function StaffDashboard({ user, profile }: StaffDashboardProps) {
         `)
         .order('created_at', { ascending: false });
       
-      // Filter manually or check if they belong to classes under this organization
       const classIds = new Set((classesRes.data || []).map(c => c.id));
-      const orgAssignments = (assignmentsRes.data as any[] || []).filter(a => classIds.has(a.class_id));
+      const orgAssignments: Assignment[] = (assignmentsRes.data as any[] || [])
+        .filter(a => classIds.has(a.class_id))
+        .map(a => ({
+          id: a.id,
+          class_id: a.class_id,
+          lesson_id: a.lesson_id,
+          title: a.title,
+          target_wpm: Number(a.target_wpm),
+          target_accuracy: Number(a.target_accuracy),
+          due_date: a.due_date || undefined,
+          created_at: a.created_at,
+          lessons: Array.isArray(a.lessons) ? a.lessons[0] : a.lessons,
+          classes_or_batches: Array.isArray(a.classes_or_batches) ? a.classes_or_batches[0] : a.classes_or_batches
+        }));
       setAssignments(orgAssignments);
 
       // 5. Fetch students linked to organization
@@ -259,7 +271,21 @@ export default function StaffDashboard({ user, profile }: StaffDashboardProps) {
 
       if (error) throw error;
 
-      setAssignments([data[0], ...assignments]);
+      const rawAssignment = data[0];
+      const formattedAssignment: Assignment = {
+        id: rawAssignment.id,
+        class_id: rawAssignment.class_id,
+        lesson_id: rawAssignment.lesson_id,
+        title: rawAssignment.title,
+        target_wpm: Number(rawAssignment.target_wpm),
+        target_accuracy: Number(rawAssignment.target_accuracy),
+        due_date: rawAssignment.due_date || undefined,
+        created_at: rawAssignment.created_at,
+        lessons: Array.isArray(rawAssignment.lessons) ? rawAssignment.lessons[0] : rawAssignment.lessons,
+        classes_or_batches: Array.isArray(rawAssignment.classes_or_batches) ? rawAssignment.classes_or_batches[0] : rawAssignment.classes_or_batches
+      };
+
+      setAssignments([formattedAssignment, ...assignments]);
       setAssignTitle('');
       setShowAssignModal(false);
       setSuccessMessage('Homework task assigned successfully!');

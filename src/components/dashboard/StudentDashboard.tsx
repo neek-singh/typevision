@@ -38,6 +38,8 @@ interface UserProfile {
   display_name: string;
   role?: string;
   organization_id?: string | null;
+  subscription_plan?: string | null;
+  subscription_status?: string | null;
   created_at: string;
 }
 
@@ -199,7 +201,7 @@ export default function StudentDashboard({ user, profile, isStudent = false, onT
             // Query profiles & high scores
             const classmatesRes = await supabase
               .from('users')
-              .select('id, display_name')
+              .select('id, display_name, email')
               .in('id', studentIdsInClass);
 
             const classmatesData = classmatesRes.data || [];
