@@ -2,6 +2,7 @@ import { supabase } from '@/utils/supabase';
 import Link from 'next/link';
 import { ArrowLeft, AlertCircle } from 'lucide-react';
 import TypingEngine from '@/components/ClientTypingEngine';
+import TheoryEngine from '@/components/ClientTheoryEngine';
 
 interface Lesson {
   id: string;
@@ -9,6 +10,7 @@ interface Lesson {
   content: string;
   level: 'Beginner' | 'Intermediate' | 'Advanced';
   language: 'English' | 'Hindi';
+  type?: 'theory' | 'practical';
 }
 
 const FALLBACK_LESSONS: Lesson[] = [
@@ -225,14 +227,25 @@ export default async function LessonPage({ params }: LessonPageProps) {
         </div>
       </div>
 
-      {/* Mounting live Typing test Playground */}
+      {/* Mounting live Typing test Playground or Theory reading area */}
       <div className="w-full">
-        <TypingEngine
-          lessonId={lesson.id}
-          nextLessonId={nextLessonId}
-          initialText={lesson.content}
-          language={lesson.language}
-        />
+        {lesson.type === 'theory' ? (
+          <TheoryEngine
+            lessonId={lesson.id}
+            nextLessonId={nextLessonId}
+            title={lesson.title}
+            content={lesson.content}
+            language={lesson.language}
+            level={lesson.level}
+          />
+        ) : (
+          <TypingEngine
+            lessonId={lesson.id}
+            nextLessonId={nextLessonId}
+            initialText={lesson.content}
+            language={lesson.language}
+          />
+        )}
       </div>
     </div>
   );

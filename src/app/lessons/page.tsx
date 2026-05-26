@@ -127,9 +127,9 @@ const FALLBACK_LESSONS: Lesson[] = [
 
 export default function Lessons() {
   const { user, initialize } = useAuthStore();
-  const [lessons, setLessons] = useState<Lesson[]>(FALLBACK_LESSONS);
+  const [lessons, setLessons] = useState<Lesson[]>([]);
   const [progress, setProgress] = useState<Record<string, ProgressItem>>({});
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     initialize();
@@ -137,19 +137,13 @@ export default function Lessons() {
 
   useEffect(() => {
     const loadLessonsData = async () => {
-      // Show full-page loader only if lessons list is empty
-      if (lessons.length === 0) {
-        setLoading(true);
-      }
+      setLoading(true);
       try {
-        // 1. Fetch Lessons (Cached for 60 seconds) and User Progress (Cached for 15 seconds) in parallel
-        const lessonsPromise = fetchWithCache('lessons-list', async () => {
-          const { data, error } = await supabase
-            .from('lessons')
-            .select('*');
-          if (error) throw error;
-          return data || [];
-        }, 60000);
+        // 1. Fetch Lessons (ordered by creation date ascending) and User Progress in parallel
+        const lessonsPromise = supabase
+          .from('lessons')
+          .select('*')
+          .order('created_at', { ascending: true });
 
         const progressPromise = user
           ? fetchWithCache(`progress-${user.id}`, async () => {
@@ -162,13 +156,18 @@ export default function Lessons() {
             }, 15000)
           : Promise.resolve([]);
 
-        const [dbLessons, userProgress] = await Promise.all([
+        const [lessonsRes, userProgress] = await Promise.all([
           lessonsPromise,
           progressPromise
         ]);
 
+        if (lessonsRes.error) throw lessonsRes.error;
+        const dbLessons = lessonsRes.data || [];
+
         if (dbLessons && dbLessons.length > 0) {
           setLessons(dbLessons as Lesson[]);
+        } else {
+          setLessons(FALLBACK_LESSONS);
         }
 
         if (userProgress) {
@@ -186,6 +185,7 @@ export default function Lessons() {
         }
       } catch (err) {
         console.error('Failed to load lessons:', err);
+        setLessons(FALLBACK_LESSONS);
       } finally {
         setLoading(false);
       }

@@ -25,34 +25,29 @@ CREATE POLICY "Allow update for owners and admins"
         EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'admin')
     );
 
--- 2. Lessons Table
+
+-- 2. Lessons Table for Typing Practice
 CREATE TABLE IF NOT EXISTS public.lessons (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     title TEXT NOT NULL,
     content TEXT NOT NULL,
-    level TEXT NOT NULL CHECK (level IN ('Beginner', 'Intermediate', 'Advanced')),
     language TEXT NOT NULL CHECK (language IN ('English', 'Hindi')),
+    level TEXT NOT NULL CHECK (level IN ('Beginner', 'Intermediate', 'Advanced')),
+    type TEXT CHECK (type IN ('theory', 'practical')) DEFAULT 'practical',
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Enable RLS for lessons (public read, admin write - represented as read-only for authenticated users)
+-- Enable RLS for lessons
 ALTER TABLE public.lessons ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Anyone can read lessons"
+CREATE POLICY "Allow public select for lessons"
     ON public.lessons FOR SELECT
     USING (true);
 
-CREATE POLICY "Allow admin to insert lessons"
-    ON public.lessons FOR INSERT 
-    WITH CHECK (EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'admin'));
+CREATE POLICY "Allow staff and admin to manage lessons"
+    ON public.lessons FOR ALL
+    USING (EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role IN ('admin', 'principal', 'staff')));
 
-CREATE POLICY "Allow admin to update lessons"
-    ON public.lessons FOR UPDATE 
-    USING (EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'admin'));
-
-CREATE POLICY "Allow admin to delete lessons"
-    ON public.lessons FOR DELETE 
-    USING (EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'admin'));
 
 -- 3. Typing Results Table
 CREATE TABLE IF NOT EXISTS public.typing_results (
@@ -82,15 +77,18 @@ CREATE POLICY "Allow admin to select all typing results"
         EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'admin')
     );
 
--- 4. Progress Table
+CREATE POLICY "Allow staff and admin to manage typing results"
+    ON public.typing_results FOR ALL
+    USING (EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role IN ('admin', 'principal', 'staff')));
+-- 4. Student Lesson Progress Table
 CREATE TABLE IF NOT EXISTS public.progress (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
-    lesson_id UUID REFERENCES public.lessons(id) ON DELETE CASCADE,
-    completed BOOLEAN DEFAULT TRUE,
+    lesson_id UUID NOT NULL REFERENCES public.lessons(id) ON DELETE CASCADE,
+    completed BOOLEAN DEFAULT FALSE,
     high_score_wpm DOUBLE PRECISION DEFAULT 0,
-    updated_at TIMESTAMPTZ DEFAULT NOW(),
-    UNIQUE (user_id, lesson_id)
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- Enable RLS for progress
@@ -101,12 +99,17 @@ CREATE POLICY "Users can manage their own progress"
     USING (auth.uid() = user_id)
     WITH CHECK (auth.uid() = user_id);
 
-CREATE POLICY "Allow admin to select all progress"
-    ON public.progress FOR SELECT 
+CREATE POLICY "Allow admin and staff to select progress"
+    ON public.progress FOR SELECT
     USING (
         auth.uid() = user_id OR 
-        EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'admin')
+        EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role IN ('admin', 'principal', 'staff'))
     );
+
+CREATE POLICY "Allow staff and admin to manage progress"
+    ON public.progress FOR ALL
+    USING (EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role IN ('admin', 'principal', 'staff')));
+
 
 -- 5. Automate user profile creation on Supabase Signup
 CREATE OR REPLACE FUNCTION public.handle_new_user()
@@ -127,24 +130,7 @@ CREATE OR REPLACE TRIGGER on_auth_user_created
     FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
 
--- 6. Insert Seed Lessons (English and Hindi Krutidev)
-INSERT INTO public.lessons (title, content, level, language) VALUES
--- English Lessons
-('Home Row Practice', 'asdfg hjkl; asdfg hjkl; asdfg hjkl; asdfg hjkl; asdfg hjkl; asdfg hjkl; asdfg hjkl; asdfg hjkl; asdfg hjkl; asdfg hjkl;', 'Beginner', 'English'),
-('Top Row Practice', 'qwert poiuy qwert poiuy qwert poiuy qwert poiuy qwert poiuy qwert poiuy qwert poiuy qwert poiuy qwert poiuy qwert poiuy', 'Beginner', 'English'),
-('Bottom Row Practice', 'zxcvb /.,mn zxcvb /.,mn zxcvb /.,mn zxcvb /.,mn zxcvb /.,mn zxcvb /.,mn zxcvb /.,mn zxcvb /.,mn zxcvb /.,mn zxcvb /.,mn', 'Beginner', 'English'),
-('Quick Brown Fox', 'the quick brown fox jumps over the lazy dog the quick brown fox jumps over the lazy dog the quick brown fox jumps over the lazy dog the quick brown fox jumps over the lazy dog', 'Intermediate', 'English'),
-('Simple Paragraph', 'typing practice is very important to build typing speed and accuracy. focus on correct finger placement on the home row keys. do not look at the keyboard. typing regularly will build muscle memory.', 'Intermediate', 'English'),
-('Technological Era', 'the advancement of artificial intelligence and machine learning is reshaping the technological landscape. software engineering practices are evolving rapidly, requiring continuous adaptation and robust system design skills from developers worldwide.', 'Advanced', 'English'),
-('Philosophy of Time', 'time is a created thing. to say I do not have time, is like saying, I do not want to. our focus should be on prioritizing high impact creative actions rather than running behind minor distractions in our daily lives.', 'Advanced', 'English'),
 
--- Hindi Krutidev Lessons (Content represented as QWERTY letters mapped to Kruti Dev font)
-('Hindi Home Row', 'd s f g ] a '' k l Z d s f g ] a '' k l Z d s f g ] a '' k l Z d s f g ] a '' k l Z d s f g ] a '' k l Z d s f g ] a '' k l Z', 'Beginner', 'Hindi'),
-('Hindi Top Row', 'w e r t y u i o p [ w e r t y u i o p [ w e r t y u i o p [ w e r t y u i o p [ w e r t y u i o p [ w e r t y u i o p [', 'Beginner', 'Hindi'),
-('Hindi Bottom Row', 'z x c v b n m , . / z x c v b n m , . / z x c v b n m , . / z x c v b n m , . / z x c v b n m , . / z x c v b n m , . /', 'Beginner', 'Hindi'),
-('Hindi Simple Words', 'jke jktk jke dk jktk Fkk mldh jkuh Fkh nksuksa taxy x;s Fks ogk¡ mUgksaus ,d ''ksj ns[kk jke us rhj pyk;k jktk cgqr [kq''k gqvk taxy dk n`''; cgqr gh lqUnj Fkk A', 'Intermediate', 'Hindi'),
-('Hindi Sentence Practice', 'lPpk fe= ogh gS tks foifRr ds le; dke vk;s A gesa ges''kk nwljksa dh enn djuh pkfg, A tSlh djuh oSlh Hkjuh A tks tSlk cks;sxk og oSlk gh dkVsxk A le; cgqr gh ewY;oku gS bls O;FkZ u [kks;sa A', 'Intermediate', 'Hindi'),
-('Hindi Advanced Paragraph', 'O;fDrxr fodkl ds fy, fujUrj vH;kl dh vko'';drk gksrh gS A tc ge vius y{; ds izfr lefiZr gksrs gSa rks lQyrk fuf''pr gh feyrh gS A ifjJe gh lQyrk dh dqatkh gS A thou esa fujUrj vkxs c<+rs jguk gh ixzsfr dk nwljk uke gS A gesa vius drZO;ksa dk fu"Bk ls ikyu djuk pkfg, A', 'Advanced', 'Hindi');
 
 -- 7. System Errors Table for Admin Monitoring
 CREATE TABLE IF NOT EXISTS public.system_errors (
@@ -181,8 +167,7 @@ CREATE INDEX IF NOT EXISTS idx_typing_results_user_id ON public.typing_results(u
 -- Index created_at in typing_results to speed up chronological sorting of user scores
 CREATE INDEX IF NOT EXISTS idx_typing_results_created_at ON public.typing_results(created_at DESC);
 
--- Index user_id in progress table to accelerate completion checks and overall progress calculation
-CREATE INDEX IF NOT EXISTS idx_progress_user_id ON public.progress(user_id);
+
 
 -- Index created_at in system_errors for faster dashboard loading of admin system analytics
 CREATE INDEX IF NOT EXISTS idx_system_errors_created_at ON public.system_errors(created_at DESC);
@@ -416,4 +401,9 @@ CREATE INDEX IF NOT EXISTS idx_submissions_assignment_id ON public.assignment_su
 CREATE INDEX IF NOT EXISTS idx_submissions_student_id ON public.assignment_submissions(student_id);
 CREATE INDEX IF NOT EXISTS idx_certificates_user_id ON public.certificates(user_id);
 CREATE INDEX IF NOT EXISTS idx_certificates_code ON public.certificates(certificate_code);
+
+CREATE INDEX IF NOT EXISTS idx_progress_user_id ON public.progress(user_id);
+CREATE INDEX IF NOT EXISTS idx_progress_lesson_id ON public.progress(lesson_id);
+CREATE INDEX IF NOT EXISTS idx_typing_results_lesson_id ON public.typing_results(lesson_id);
+CREATE INDEX IF NOT EXISTS idx_assignments_lesson_id ON public.assignments(lesson_id);
 
