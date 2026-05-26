@@ -205,7 +205,7 @@ export default async function LessonPage({ params }: LessonPageProps) {
   }
 
   return (
-    <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 pt-4 sm:pt-6 pb-10 w-full space-y-5 sm:space-y-6">
+    <div className={`mx-auto px-4 sm:px-6 lg:px-8 pt-4 sm:pt-6 pb-10 w-full space-y-5 sm:space-y-6 ${lesson.type === 'theory' ? 'max-w-6xl' : 'max-w-4xl'}`}>
       {/* Dynamic Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-white/5 pb-4.5">
         <div className="flex items-center gap-2">

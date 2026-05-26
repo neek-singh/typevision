@@ -44,8 +44,17 @@ CREATE POLICY "Allow public select for lessons"
     ON public.lessons FOR SELECT
     USING (true);
 
-CREATE POLICY "Allow staff and admin to manage lessons"
-    ON public.lessons FOR ALL
+CREATE POLICY "Allow staff and admin to insert lessons"
+    ON public.lessons FOR INSERT
+    WITH CHECK (EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role IN ('admin', 'principal', 'staff')));
+
+CREATE POLICY "Allow staff and admin to update lessons"
+    ON public.lessons FOR UPDATE
+    USING (EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role IN ('admin', 'principal', 'staff')))
+    WITH CHECK (EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role IN ('admin', 'principal', 'staff')));
+
+CREATE POLICY "Allow staff and admin to delete lessons"
+    ON public.lessons FOR DELETE
     USING (EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role IN ('admin', 'principal', 'staff')));
 
 

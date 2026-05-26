@@ -140,7 +140,7 @@ export default function TheoryEngine({
         {/* Content Area */}
         <div className="relative">
           <div 
-            className={`w-full min-h-[220px] max-h-[500px] overflow-y-auto text-sm sm:text-base leading-relaxed text-slate-300 tracking-wide select-text selection:bg-purple-500/20 selection:text-purple-300 pr-3 scrollbar-thin scrollbar-thumb-white/5 whitespace-pre-wrap ${
+            className={`w-full min-h-[calc(100vh-280px)] overflow-y-auto text-sm sm:text-base leading-relaxed text-slate-300 tracking-wide select-text selection:bg-purple-500/20 selection:text-purple-300 pr-1 scrollbar-thin scrollbar-thumb-white/5 whitespace-pre-wrap ${
               language === 'Hindi' ? 'font-krutidev text-lg sm:text-xl md:text-2xl leading-loose' : 'font-sans'
             }`}
             dangerouslySetInnerHTML={{ __html: content }}
