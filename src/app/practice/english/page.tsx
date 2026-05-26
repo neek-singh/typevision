@@ -120,13 +120,11 @@ export default function EnglishPractice() {
 
       {/* Typing Playground — moved up, bigger */}
       {paragraph && (
-        <div className="w-full rounded-2xl border border-white/5 bg-slate-900/10 p-1 backdrop-blur-sm">
-          <TypingEngine
-            key={`english-${difficulty}-${index}`}
-            initialText={paragraph}
-            language="English"
-          />
-        </div>
+        <TypingEngine
+          key={`english-${difficulty}-${index}`}
+          initialText={paragraph}
+          language="English"
+        />
       )}
 
       {/* Typing Tip */}

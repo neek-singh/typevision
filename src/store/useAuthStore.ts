@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { supabase } from '@/utils/supabase';
 import { Session, User } from '@supabase/supabase-js';
-import { fetchWithCache } from '@/lib/cache/cache-utils';
+import { fetchWithCache, clearCache } from '@/lib/cache/cache-utils';
 
 interface UserProfile {
   id: string;
@@ -133,15 +133,19 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   signOut: async () => {
-    set({ loading: true });
+    // 1. Immediately wipe local auth cookies, Zustand state, and clear memory cache for instant UI response
     try {
-      await supabase.auth.signOut();
-    } catch (err) {
-      console.error('SignOut failed:', err);
-    } finally {
-      syncCookie(false);
-      set({ user: null, profile: null, session: null, loading: false });
+      clearCache();
+    } catch (cacheErr) {
+      console.error('Cache clear failed during signOut:', cacheErr);
     }
+    syncCookie(false);
+    set({ user: null, profile: null, session: null, loading: false });
+
+    // 2. Perform Supabase sign out asynchronously in the background (fire-and-forget)
+    supabase.auth.signOut().catch((err) => {
+      console.error('Background SignOut failed:', err);
+    });
   },
 
   updateSubscription: async (plan, status) => {

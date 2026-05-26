@@ -152,30 +152,73 @@ export default async function LessonPage({ params }: LessonPageProps) {
     );
   }
 
+  // Calculate lesson index dynamically matching list page
+  let lessonNumber = 1;
+  let nextLessonId: string | null = null;
+
+  const isFallbackId = id.startsWith('en-') || id.startsWith('hi-');
+
+  if (isFallbackId) {
+    const filtered = FALLBACK_LESSONS.filter(
+      (l) => l.language === lesson!.language && l.level === lesson!.level
+    );
+    const index = filtered.findIndex((l) => l.id === id);
+    if (index !== -1) {
+      lessonNumber = index + 1;
+      if (index + 1 < filtered.length) {
+        nextLessonId = filtered[index + 1].id;
+      }
+    }
+  } else {
+    try {
+      const { data: dbLessons } = await supabase
+        .from('lessons')
+        .select('id, language, level')
+        .order('created_at', { ascending: true });
+
+      const lessonsList = (dbLessons && dbLessons.length > 0) ? dbLessons : FALLBACK_LESSONS;
+      const filtered = lessonsList.filter(
+        (l) => l.language === lesson!.language && l.level === lesson!.level
+      );
+      const index = filtered.findIndex((l) => l.id === id);
+      if (index !== -1) {
+        lessonNumber = index + 1;
+        if (index + 1 < filtered.length) {
+          nextLessonId = filtered[index + 1].id;
+        }
+      }
+    } catch (err) {
+      console.error('Error calculating lesson number:', err);
+      const filtered = FALLBACK_LESSONS.filter(
+        (l) => l.language === lesson!.language && l.level === lesson!.level
+      );
+      const index = filtered.findIndex((l) => l.id === id);
+      if (index !== -1) {
+        lessonNumber = index + 1;
+        if (index + 1 < filtered.length) {
+          nextLessonId = filtered[index + 1].id;
+        }
+      }
+    }
+  }
+
   return (
-    <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-10 w-full space-y-8">
+    <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 pt-4 sm:pt-6 pb-10 w-full space-y-5 sm:space-y-6">
       {/* Dynamic Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-white/5 pb-6">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <Link
-              href="/lessons"
-              className="flex items-center justify-center h-8 w-8 rounded-lg bg-slate-900 border border-white/5 text-slate-400 hover:text-white transition-colors cursor-pointer"
-            >
-              <ArrowLeft className="h-4 w-4" />
-            </Link>
-            <span className="text-xs font-semibold text-slate-400">
-              Lessons / {lesson.language} / {lesson.level}
-            </span>
-          </div>
-          <h1 className="text-3xl font-extrabold text-white tracking-tight">
-            {lesson.title}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-white/5 pb-4.5">
+        <div className="flex items-center gap-2">
+          <Link
+            href="/lessons"
+            className="flex items-center justify-center h-6 w-6 sm:h-7 sm:w-7 rounded-md bg-slate-900 border border-white/5 text-slate-400 hover:text-white transition-all cursor-pointer hover:border-white/10 shrink-0"
+            title="Back to Lessons"
+          >
+            <ArrowLeft className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+          </Link>
+          <h1 className="text-sm sm:text-base font-bold text-white tracking-tight">
+            Lesson {lessonNumber} - {lesson.title}
           </h1>
         </div>
         <div className="flex items-center gap-2 self-start sm:self-center">
-          <span className="rounded-full bg-cyan-950/40 border border-cyan-500/20 px-3 py-1 text-xs font-bold text-cyan-400 uppercase">
-            {lesson.level}
-          </span>
           <span className="rounded bg-slate-900 border border-white/5 px-2.5 py-1 text-xs font-bold text-slate-400">
             {lesson.language === 'Hindi' ? 'Krutidev Layout' : 'English QWERTY'}
           </span>
@@ -186,6 +229,7 @@ export default async function LessonPage({ params }: LessonPageProps) {
       <div className="w-full">
         <TypingEngine
           lessonId={lesson.id}
+          nextLessonId={nextLessonId}
           initialText={lesson.content}
           language={lesson.language}
         />

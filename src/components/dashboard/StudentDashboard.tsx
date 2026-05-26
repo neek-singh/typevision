@@ -195,37 +195,47 @@ export default function StudentDashboard({ user, profile, isStudent = false, onT
             // Fetch class leaderboard
             const classStudentsRes = await supabase
               .from('class_students')
-              .select('student_id');
+              .select('student_id')
+              .eq('class_id', enrolledClassId);
             const studentIdsInClass = (classStudentsRes.data || []).map(s => s.student_id);
 
-            // Query profiles & high scores
-            const classmatesRes = await supabase
-              .from('users')
-              .select('id, display_name, email')
-              .in('id', studentIdsInClass);
+            if (studentIdsInClass.length > 0) {
+              // Query profiles & high scores
+              const classmatesRes = await supabase
+                .from('users')
+                .select('id, display_name, email')
+                .in('id', studentIdsInClass);
 
-            const classmatesData = classmatesRes.data || [];
-            
-            // Map classmates to their best typing result speed
-            const leaderboardData = await Promise.all(
-              classmatesData.map(async (classmate) => {
-                const bestRes = await supabase
-                  .from('typing_results')
-                  .select('wpm')
-                  .eq('user_id', classmate.id)
-                  .order('wpm', { ascending: false })
-                  .limit(1);
-                
+              const classmatesData = classmatesRes.data || [];
+              
+              // Batch fetch all typing results for classmates in a single query
+              const bestResultsRes = await supabase
+                .from('typing_results')
+                .select('user_id, wpm')
+                .in('user_id', studentIdsInClass);
+
+              const bestResultsMap = new Map<string, number>();
+              (bestResultsRes.data || []).forEach((row: any) => {
+                const currentBest = bestResultsMap.get(row.user_id) || 0;
+                if (row.wpm > currentBest) {
+                  bestResultsMap.set(row.user_id, row.wpm);
+                }
+              });
+
+              const leaderboardData = classmatesData.map((classmate) => {
+                const highWpm = bestResultsMap.get(classmate.id) || 0;
                 return {
                   display_name: classmate.display_name || classmate.email?.split('@')[0] || 'Student',
-                  high_wpm: Math.round(bestRes.data?.[0]?.wpm || 0)
+                  high_wpm: Math.round(highWpm)
                 };
-              })
-            );
+              });
 
-            // Sort leaderboard descending
-            leaderboardData.sort((a, b) => b.high_wpm - a.high_wpm);
-            setLeaderboard(leaderboardData);
+              // Sort leaderboard descending
+              leaderboardData.sort((a, b) => b.high_wpm - a.high_wpm);
+              setLeaderboard(leaderboardData);
+            } else {
+              setLeaderboard([]);
+            }
           }
         }
       } catch (err: any) {

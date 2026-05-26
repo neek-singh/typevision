@@ -31,12 +31,12 @@ export default function LessonCard({ lesson, progress, lessonNumber }: LessonCar
   const accuracy = progress?.accuracy ?? 0;
 
   return (
-    <div className="relative flex flex-col justify-between overflow-hidden rounded-2xl border border-white/10 bg-slate-950 p-5 shadow-lg hover:border-cyan-500/30 hover:shadow-cyan-900/5 transition-all duration-300 group">
-      <div className="space-y-4">
+    <div className="relative flex flex-col justify-between overflow-hidden rounded-2xl border border-white/10 bg-slate-950 p-4 sm:p-4.5 shadow-lg hover:border-cyan-500/30 hover:shadow-cyan-900/5 transition-all duration-300 group">
+      <div className="space-y-3">
         {/* Lesson Number + Language badge row */}
         <div className="flex items-center justify-between">
           {lessonNumber !== undefined ? (
-            <span className="inline-flex items-center gap-1.5 rounded-lg bg-cyan-500/10 border border-cyan-500/20 px-2.5 py-1 text-xs font-bold text-cyan-400">
+            <span className="inline-flex items-center gap-1.5 rounded-lg bg-cyan-500/10 border border-cyan-500/20 px-2 py-0.5 text-xs font-bold text-cyan-400">
               Lesson {lessonNumber}
             </span>
           ) : (
@@ -47,29 +47,16 @@ export default function LessonCard({ lesson, progress, lessonNumber }: LessonCar
           </span>
         </div>
 
-        {/* Title & Level Badge */}
+        {/* Title */}
         <div>
-          <h3 className="text-lg font-bold text-white group-hover:text-cyan-400 transition-colors">
+          <h3 className="text-base sm:text-lg font-bold text-white group-hover:text-cyan-400 transition-colors truncate">
             {lesson.title}
           </h3>
-          <div className="mt-1.5 flex items-center gap-2">
-            <LessonLevelBadge level={lesson.level} />
-            <span className="text-[10px] text-slate-500 font-medium">{lesson.content.length} characters</span>
-          </div>
-        </div>
-
-        {/* Preview Text Box */}
-        <div className="rounded-xl bg-slate-900/40 p-3 border border-white/5 max-h-[70px] overflow-hidden select-none">
-          <p className={`text-xs text-slate-400 leading-relaxed font-mono line-clamp-2 ${
-            lesson.language === 'Hindi' ? 'font-krutidev text-base text-slate-300 leading-normal' : ''
-          }`}>
-            {lesson.content}
-          </p>
         </div>
       </div>
 
       {/* Bottom Footer Actions */}
-      <div className="mt-6 flex items-center justify-between border-t border-white/5 pt-4">
+      <div className="mt-4 flex items-center justify-between border-t border-white/5 pt-3">
         {/* Completion Status */}
         <div className="min-h-[32px] flex items-center">
           {isCompleted ? (

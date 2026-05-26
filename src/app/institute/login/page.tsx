@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/useAuthStore';
 import Link from 'next/link';
-import { LogIn, Mail, Lock, AlertCircle, ArrowRight, ArrowLeft, School } from 'lucide-react';
+import { LogIn, Mail, Lock, AlertCircle, ArrowRight, ArrowLeft, School, Eye, EyeOff } from 'lucide-react';
 
 export default function InstituteLogin() {
   const router = useRouter();
@@ -12,16 +12,17 @@ export default function InstituteLogin() {
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     initialize();
   }, [initialize]);
 
-  // Redirect if already logged in
+  // Redirect if already logged in — go to tutor portal
   useEffect(() => {
     if (initialized && user) {
-      router.push('/dashboard');
+      router.push('/dashboard/institute');
     }
   }, [user, initialized, router]);
 
@@ -39,7 +40,7 @@ export default function InstituteLogin() {
     if (signInError) {
       setError(signInError.message || 'Invalid email or password.');
     } else {
-      router.push('/dashboard');
+      router.push('/dashboard/institute');
     }
   };
 
@@ -109,13 +110,21 @@ export default function InstituteLogin() {
                 <input
                   id="password"
                   name="password"
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="block w-full rounded-xl border border-white/10 bg-slate-900/50 py-3 pl-10 pr-4 text-slate-100 placeholder-slate-500 outline-none focus:border-cyan-500 focus:bg-slate-900 focus:ring-1 focus:ring-cyan-500 transition-all text-xs font-semibold"
+                  className="block w-full rounded-xl border border-white/10 bg-slate-900/50 py-3 pl-10 pr-10 text-slate-100 placeholder-slate-500 outline-none focus:border-cyan-500 focus:bg-slate-900 focus:ring-1 focus:ring-cyan-500 transition-all text-xs font-semibold"
                   placeholder="••••••••"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-500 hover:text-slate-300 transition-colors cursor-pointer"
+                  title={showPassword ? 'Hide Password' : 'Show Password'}
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
               </div>
             </div>
           </div>

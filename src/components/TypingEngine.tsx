@@ -20,10 +20,10 @@ const CharacterSpan = React.memo(({ char, isTyped, isCurrent, isWrong }: Charact
 
   if (isTyped) {
     className = isWrong
-      ? 'text-rose-500 bg-rose-500/10 border-b border-rose-500 font-semibold'
-      : 'text-emerald-400 font-medium';
+      ? 'text-rose-500 bg-rose-500/10 border-b border-rose-500'
+      : 'text-emerald-400';
   } else if (isCurrent) {
-    className = 'text-cyan-400 bg-cyan-400/20 border-b-2 border-cyan-400 animate-pulse font-bold rounded-sm px-0.5';
+    className = 'text-cyan-400 bg-cyan-400/20 animate-pulse rounded-sm px-0.5';
   }
 
   return (
@@ -84,9 +84,9 @@ const TypingPlayground = React.memo(({ language }: { language: 'English' | 'Hind
   const isCompleted = useTypingStore((state) => state.isCompleted);
 
   return (
-    <div className="relative min-h-[240px] rounded-2xl border border-white/10 bg-slate-950 p-6 shadow-2xl transition-all duration-300 md:p-10">
+    <div className="relative min-h-[160px] py-4 transition-all duration-300">
       {!isActive && !isCompleted && typedText.length === 0 && (
-        <div className="absolute top-4 right-6 z-10">
+        <div className="absolute top-1 right-0 z-10">
           <p className="animate-pulse text-xs font-semibold tracking-wide text-cyan-500/70">
             Start typing to begin...
           </p>
@@ -94,9 +94,10 @@ const TypingPlayground = React.memo(({ language }: { language: 'English' | 'Hind
       )}
 
       <div
-        className={`text-xl leading-loose md:text-2xl tracking-wide select-none outline-none ${
-          language === 'Hindi' ? 'font-krutidev text-2xl tracking-normal' : 'font-sans'
-        }`}
+        className={`select-none outline-none ${language === 'Hindi'
+          ? 'font-krutidev text-xl sm:text-2xl md:text-4xl leading-loose tracking-normal'
+          : 'font-sans text-xl sm:text-2xl md:text-4xl leading-relaxed tracking-wide'
+          }`}
       >
         {text.split('').map((char, index) => (
           <CharacterSpan
@@ -116,11 +117,12 @@ TypingPlayground.displayName = 'TypingPlayground';
 // Decoupled action tray & supabase saving logic
 interface TypingActionsProps {
   lessonId?: string;
+  nextLessonId?: string | null;
   handleRestart: () => void;
   onCompleteCallback?: (stats: { wpm: number; accuracy: number; mistakes: number }) => void;
 }
 
-const TypingActions = React.memo(({ lessonId, handleRestart, onCompleteCallback }: TypingActionsProps) => {
+const TypingActions = React.memo(({ lessonId, nextLessonId, handleRestart, onCompleteCallback }: TypingActionsProps) => {
   const isCompleted = useTypingStore((state) => state.isCompleted);
   const getStats = useTypingStore((state) => state.getStats);
   const { user } = useAuthStore();
@@ -219,7 +221,7 @@ const TypingActions = React.memo(({ lessonId, handleRestart, onCompleteCallback 
         className="flex items-center gap-2 rounded-xl border border-white/10 bg-slate-900 px-5 py-3 text-sm font-bold text-white hover:bg-slate-800 hover:border-white/20 transition-all duration-200"
       >
         <RefreshCw className="h-4 w-4" />
-        Restart Typing Test
+        Restart Lesson
       </button>
 
       {isCompleted && (
@@ -236,11 +238,20 @@ const TypingActions = React.memo(({ lessonId, handleRestart, onCompleteCallback 
           )}
           <Link
             href="/lessons"
-            className="flex items-center gap-1 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 px-5 py-3 text-sm font-bold text-white shadow-lg hover:from-cyan-400 hover:to-blue-500 hover:shadow-cyan-500/25 transition-all"
+            className="flex items-center gap-1 rounded-xl bg-slate-900 border border-white/10 px-5 py-3 text-sm font-bold text-white hover:bg-slate-800 hover:border-white/20 transition-all duration-200"
           >
             Back to Lessons
-            <ArrowRight className="h-4 w-4" />
           </Link>
+
+          {nextLessonId && (
+            <Link
+              href={`/lessons/${nextLessonId}`}
+              className="flex items-center gap-1 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 px-5 py-3 text-sm font-bold text-white shadow-lg hover:from-cyan-400 hover:to-blue-500 hover:shadow-cyan-500/25 transition-all"
+            >
+              Continue
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          )}
         </div>
       )}
     </div>
@@ -250,12 +261,13 @@ TypingActions.displayName = 'TypingActions';
 
 interface TypingEngineProps {
   lessonId?: string;
+  nextLessonId?: string | null;
   initialText: string;
   language: 'English' | 'Hindi';
   onCompleteCallback?: (stats: { wpm: number; accuracy: number; mistakes: number }) => void;
 }
 
-export default function TypingEngine({ lessonId, initialText, language, onCompleteCallback }: TypingEngineProps) {
+export default function TypingEngine({ lessonId, nextLessonId, initialText, language, onCompleteCallback }: TypingEngineProps) {
   const initializeTest = useTypingStore((state) => state.initializeTest);
   const resetTest = useTypingStore((state) => state.resetTest);
   const isActive = useTypingStore((state) => state.isActive);
@@ -337,6 +349,7 @@ export default function TypingEngine({ lessonId, initialText, language, onComple
       {/* Action Tray & Telemetry Saver */}
       <TypingActions
         lessonId={lessonId}
+        nextLessonId={nextLessonId}
         handleRestart={handleRestart}
         onCompleteCallback={onCompleteCallback}
       />

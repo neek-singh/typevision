@@ -127,9 +127,9 @@ const FALLBACK_LESSONS: Lesson[] = [
 
 export default function Lessons() {
   const { user, initialize } = useAuthStore();
-  const [lessons, setLessons] = useState<Lesson[]>([]);
+  const [lessons, setLessons] = useState<Lesson[]>(FALLBACK_LESSONS);
   const [progress, setProgress] = useState<Record<string, ProgressItem>>({});
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     initialize();
@@ -137,10 +137,13 @@ export default function Lessons() {
 
   useEffect(() => {
     const loadLessonsData = async () => {
-      setLoading(true);
+      // Show full-page loader only if lessons list is empty
+      if (lessons.length === 0) {
+        setLoading(true);
+      }
       try {
-        // 1. Fetch Lessons (Cached for 60 seconds)
-        const dbLessons = await fetchWithCache('lessons-list', async () => {
+        // 1. Fetch Lessons (Cached for 60 seconds) and User Progress (Cached for 15 seconds) in parallel
+        const lessonsPromise = fetchWithCache('lessons-list', async () => {
           const { data, error } = await supabase
             .from('lessons')
             .select('*');
@@ -148,40 +151,41 @@ export default function Lessons() {
           return data || [];
         }, 60000);
 
+        const progressPromise = user
+          ? fetchWithCache(`progress-${user.id}`, async () => {
+              const { data, error } = await supabase
+                .from('progress')
+                .select('*')
+                .eq('user_id', user.id);
+              if (error) throw error;
+              return data || [];
+            }, 15000)
+          : Promise.resolve([]);
+
+        const [dbLessons, userProgress] = await Promise.all([
+          lessonsPromise,
+          progressPromise
+        ]);
+
         if (dbLessons && dbLessons.length > 0) {
           setLessons(dbLessons as Lesson[]);
-        } else {
-          setLessons(FALLBACK_LESSONS);
         }
 
-        // 2. Fetch User Progress (Cached for 15 seconds)
-        if (user) {
-          const userProgress = await fetchWithCache(`progress-${user.id}`, async () => {
-            const { data, error } = await supabase
-              .from('progress')
-              .select('*')
-              .eq('user_id', user.id);
-            if (error) throw error;
-            return data || [];
-          }, 15000);
-
-          if (userProgress) {
-            const progMap: Record<string, ProgressItem> = {};
-            userProgress.forEach((p) => {
-              progMap[p.lesson_id] = {
-                lesson_id: p.lesson_id,
-                completed: p.completed ?? true,
-                accuracy: p.accuracy ?? 0,
-                best_wpm: p.best_wpm ?? p.high_score_wpm ?? 0,
-                high_score_wpm: p.high_score_wpm ?? p.best_wpm ?? 0,
-              };
-            });
-            setProgress(progMap);
-          }
+        if (userProgress) {
+          const progMap: Record<string, ProgressItem> = {};
+          userProgress.forEach((p) => {
+            progMap[p.lesson_id] = {
+              lesson_id: p.lesson_id,
+              completed: p.completed ?? true,
+              accuracy: p.accuracy ?? 0,
+              best_wpm: p.best_wpm ?? p.high_score_wpm ?? 0,
+              high_score_wpm: p.high_score_wpm ?? p.best_wpm ?? 0,
+            };
+          });
+          setProgress(progMap);
         }
       } catch (err) {
         console.error('Failed to load lessons:', err);
-        setLessons(FALLBACK_LESSONS);
       } finally {
         setLoading(false);
       }

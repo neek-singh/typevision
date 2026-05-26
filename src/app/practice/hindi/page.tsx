@@ -120,13 +120,11 @@ export default function HindiPractice() {
 
       {/* Typing Playground */}
       {paragraph && (
-        <div className="w-full rounded-2xl border border-white/5 bg-slate-900/10 p-1 backdrop-blur-sm">
-          <TypingEngine
-            key={`hindi-${difficulty}-${index}`}
-            initialText={paragraph}
-            language="Hindi"
-          />
-        </div>
+        <TypingEngine
+          key={`hindi-${difficulty}-${index}`}
+          initialText={paragraph}
+          language="Hindi"
+        />
       )}
 
       {/* Typing Tip */}

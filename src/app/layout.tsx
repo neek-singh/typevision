@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import Header from "@/components/layout/header";
-import Footer from "@/components/layout/footer";
+import SiteShell from "@/components/layout/site-shell";
 import Script from "next/script";
 
 const geistSans = Geist({
@@ -62,11 +61,7 @@ export default function RootLayout({
         className="min-h-full flex flex-col bg-slate-950 text-slate-100 font-sans selection:bg-cyan-500/30 selection:text-white"
         suppressHydrationWarning
       >
-        <Header />
-        <main className="flex-1 flex flex-col">
-          {children}
-        </main>
-        <Footer />
+        <SiteShell>{children}</SiteShell>
         <Script src="https://sdk.cashfree.com/js/v3/cashfree.js" strategy="afterInteractive" />
       </body>
     </html>
